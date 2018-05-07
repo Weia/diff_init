@@ -221,7 +221,8 @@ def train(lr):
 def main():
     try:
         train(learning_rate)
-    except:
+    except Exception as info:
+        print(info)
         sys.exit()
 
 # log_dir='E:/Project/stacked_hourglass_net/log'
