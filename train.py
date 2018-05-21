@@ -13,7 +13,7 @@ import sys
 
 Num_Epoch=1000
 batch_size=3
-filename='/home/weic/project/linux/mirrortrain.tfrecords'
+filename='/home/weic/project/process_data/final_train.tfrecords'
 GPU='/gpu:0'
 CPU='/cpu:0'
 device=GPU
@@ -21,10 +21,12 @@ learning_rate=2.5e-4
 decay_steps=2000
 decay_rate=0.95
 staircase=True
-step_to_save=200
+step_to_save=500
 epochSize=6200
 step_to_val=1000
 valIters=10
+
+
 def cal_acc(output,gtMaps,batchSize):
     #计算准确率
     def _argmax(tensor):
@@ -63,6 +65,7 @@ def train(lr):
     print('--inference done--')
     with tf.name_scope('loss'):
         diff=tf.subtract(logits,labels)
+
         train_loss=tf.reduce_mean(tf.nn.l2_loss(diff,name='l2loss'))
         #train_loss=tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=logits, labels= labels),name='cross_entropy_loss')
     print('--loss done--')
@@ -90,16 +93,17 @@ def train(lr):
 
     merged_summary_train=tf.summary.merge_all('train')
     merged_summary_test=tf.summary.merge_all('test')
+    train_list = list()
+    val_list = list()
+    exma_list = []
 
-    train_list=list()
-    val_list=list()
     train_list.append(['learning_rate',learning_rate,'training_epoch',Num_Epoch,
                         'batch_size',batch_size,
                         ])
     val_list.append(['val_step','val_loss'])
     train_list.append(['train_step','train_loss'])
 
-    exma_list=[]
+
 
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.9)
     config = tf.ConfigProto(allow_soft_placement=True,gpu_options=gpu_options)
@@ -127,11 +131,13 @@ def train(lr):
         val_writer=tf.summary.FileWriter('log/val')
         print('Start train')
         with tf.name_scope('training'):
+            train_list.append([1,time.time()])
             for epoch in range(Num_Epoch):
                 cost=0.0
                 val_cost=0.0
                 print('* * * *第%d个Epoch* * * *'%(epoch+1))
                 beginTime=time.time()
+
                 for i in range(epochSize):
                     example, l = sess.run([batch_images, batch_labels])
                     if np.any(np.isnan(example)):
@@ -151,7 +157,7 @@ def train(lr):
 
                         train_writer.add_summary(summary,train_step)
 
-                        saver.save(sess,os.path.join(os.getcwd(),'model/model%d.ckpt'%(train_step)))
+                        saver.save(sess,'model/model%d.ckpt'%(train_step))
                         #print(save_path)
                     else:
                         _, loss = sess.run([train_op, train_loss],
@@ -192,12 +198,13 @@ def train(lr):
                 print('val cost time:',str(time.time()-valBegin))
                 print('val loss:',val_loss)
                 print('* ' * 20)
+
                 train_file = open('result/train.csv', 'w', newline='')
                 val_file = open('result/val.csv', 'w', newline='')
-                ex_file=open('result/ex.csv','w',newline='')
+                ex_file = open('result/ex.csv', 'w', newline='')
                 train_csv_writer = csv.writer(train_file, dialect='excel')
                 val_csv_writer = csv.writer(val_file, dialect='excel')
-                ex_csv_writer=csv.writer(ex_file,dialect='excel')
+                ex_csv_writer = csv.writer(ex_file, dialect='excel')
                 for raw in train_list:
                     train_csv_writer.writerow(raw)
                 for line in val_list:
@@ -208,6 +215,7 @@ def train(lr):
                     ex_csv_writer.writerow(ex)
 
                 # print('loss',loss)
+
             coord.request_stop()
             coord.join(threads)
 
@@ -224,6 +232,11 @@ def main():
     except Exception as info:
         print(info)
         sys.exit()
+
+
+
+
+
 
 # log_dir='E:/Project/stacked_hourglass_net/log'
 # if tf.gfile.Exists(log_dir):

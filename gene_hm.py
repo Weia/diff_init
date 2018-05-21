@@ -41,9 +41,10 @@ def generate_hm(height, width ,joints, maxlenght):
 
     return r_hm
 def batch_genehm(batch_size,l):
+    re_label=resize_label(l)
     label = np.zeros((batch_size, nPoints, HM_HEIGHT,HM_WIDTH), dtype=np.float32)
     for i in range(batch_size):
-        label[i] =generate_hm(HM_HEIGHT,HM_WIDTH, l[i], 64)
+        label[i] =generate_hm(HM_HEIGHT,HM_WIDTH, re_label[i], 64)
     return label
 
 
@@ -51,4 +52,4 @@ def batch_genehm(batch_size,l):
 # weight=[1,1]
 # hm=generate_hm(64,64,joints,2)
 # print(hm.shape)
-# print(hm[1,14:16,14:16])
+# print(hm[1,14:20,14:20])
